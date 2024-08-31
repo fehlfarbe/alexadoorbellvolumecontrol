@@ -2,7 +2,7 @@
 
 This is a small project I made for a friend. An ESP32-S2 simulates an Amazon Alexa compatible device that can turn on and off. The connected servo motor controls the volume panel on a door bell. So you can easily turn on and off your door bell sound.
 
-![Example video](res/alexa.mp4)
+https://github.com/user-attachments/assets/47ffa413-70e1-43eb-81d7-5605061dc026
 
 On first start the device created an access point and you have to connect to your local WiFi. When the builtin led turns off the device is connected to your WiFi and has an IP address. The alexa service is based on [fauxmoESP](https://github.com/vintlabs/fauxmoESP) so you can find all relevant info how to connect it to your alexa on their project page.
 
