@@ -5,6 +5,9 @@
 #include <fauxmoESP.h>
 #include <ESP32Servo.h>
 
+#define TAG "AlexaBell"
+#define DEVICE_NAME "Door bell"
+
 #define PIN_SERVO 16
 #define SERVO_MIN 10
 #define SERVO_MAX 180
@@ -33,6 +36,8 @@ AiEsp32RotaryEncoder encoder(ENCODER_B, ENCODER_A, ENCODER_BTN, -1, SERVO_STEP, 
 TaskHandle_t pLedTask;
 TaskHandle_t pManualControlTask;
 
+bool isVolumeOn();
+uint8_t readVolume();
 void setState(unsigned char device_id, const char *device_name, bool state, unsigned char value);
 void moveTo(int angle);
 void manualControlTask(void *parameter);
@@ -47,6 +52,7 @@ void IRAM_ATTR readEncoderISR()
 void setup()
 {
   Serial.begin(115200);
+  Serial.setDebugOutput(true);
 
   // setup servo
   ESP32PWM::allocateTimer(0);
@@ -96,17 +102,25 @@ void setup()
   Serial.println(WiFi.broadcastIP());
 
   // setup alexa device
-  fauxmo.addDevice("Door bell");
+  fauxmo.addDevice(DEVICE_NAME);
+  fauxmo.setState(DEVICE_NAME, false, 0);
   fauxmo.setPort(80); // required for gen3 devices
-  fauxmo.enable(true);
-
   fauxmo.onSetState(setState);
+  fauxmo.enable(true);
 }
 
 void loop()
 {
   // update fauxmo
   fauxmo.handle();
+}
+
+bool isVolumeOn() {
+  return servo.read() == SERVO_MIN;
+}
+
+uint8_t readVolume() {
+  return map(SERVO_MAX, SERVO_MIN, 0, 255, servo.read());
 }
 
 void setState(unsigned char device_id, const char *device_name, bool state, unsigned char value)
@@ -121,6 +135,8 @@ void setState(unsigned char device_id, const char *device_name, bool state, unsi
   {
     moveTo(SERVO_MAX);
   }
+
+  fauxmo.setState(DEVICE_NAME, isVolumeOn(), readVolume());
 }
 
 void moveTo(int angle)
@@ -174,6 +190,15 @@ void manualControlTask(void *parameter)
 void WiFiEvent(WiFiEvent_t event)
 {
   wifiState = event;
+  ESP_LOGI(TAG, "WiFi mode %d", WiFi.getMode());
+
+  switch (event)
+  {
+  case ARDUINO_EVENT_WIFI_STA_LOST_IP:
+    ESP_LOGI(TAG, "STA Disconnected -> reconnect");
+    WiFi.begin();
+    break;
+  }
 }
 
 void ledTask(void *parameter)
@@ -202,15 +227,15 @@ void ledTask(void *parameter)
       break;
     case ARDUINO_EVENT_WIFI_STA_GOT_IP6:
     case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-      // ESP_LOGI( TAG, "STA IPv4: ");
+      // ESP_LOGI(TAG, "STA IPv4: ");
       // ESP_LOGI(TAG, "%s", WiFi.localIP());
       digitalWrite(LED_BUILTIN, LOW);
       break;
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
     case ARDUINO_EVENT_WIFI_STA_LOST_IP:
       // ESP_LOGI(TAG, "STA Disconnected -> reconnect");
-      WiFi.reconnect();
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      // WiFi.begin();
       break;
     case ARDUINO_EVENT_WIFI_STA_STOP:
       // ESP_LOGI(TAG, "STA Stopped");
