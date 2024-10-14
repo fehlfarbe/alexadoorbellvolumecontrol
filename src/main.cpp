@@ -103,7 +103,6 @@ void setup()
 
   // setup alexa device
   fauxmo.addDevice(DEVICE_NAME);
-  fauxmo.setState(DEVICE_NAME, false, 0);
   fauxmo.setPort(80); // required for gen3 devices
   fauxmo.onSetState(setState);
   fauxmo.enable(true);
@@ -135,8 +134,6 @@ void setState(unsigned char device_id, const char *device_name, bool state, unsi
   {
     moveTo(SERVO_MAX);
   }
-
-  fauxmo.setState(DEVICE_NAME, isVolumeOn(), readVolume());
 }
 
 void moveTo(int angle)
